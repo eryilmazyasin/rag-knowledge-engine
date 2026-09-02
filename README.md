@@ -1,7 +1,7 @@
 # 🧠 RAG Knowledge Engine
 
 <p align="center">
-  <img src="/public/Screenshot-4.png" alt="RAG Knowledge Engine Chat Preview" width="850" />
+  <img src="./public/Screenshot-4.png" alt="RAG Knowledge Engine Chat Preview" width="850" />
 </p>
 
 [TR] PostgreSQL (pgvector), Drizzle ORM ve Google Gemini 3.6 destekli, doküman izolasyonlu ve interaktif kaynak atıflı (citation) Full-Stack Retrieval-Augmented Generation (RAG) motoru.
