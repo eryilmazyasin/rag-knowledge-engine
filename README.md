@@ -1,8 +1,8 @@
 # 🧠 RAG Knowledge Engine
 
-[TR] PostgreSQL (pgvector) ve Google Gemini 3.6 destekli, doküman izolasyonlu ve interaktif kaynak atıflı (citation) Full-Stack Retrieval-Augmented Generation (RAG) motoru.
+[TR] PostgreSQL (pgvector), Drizzle ORM ve Google Gemini 3.6 destekli, doküman izolasyonlu ve interaktif kaynak atıflı (citation) Full-Stack Retrieval-Augmented Generation (RAG) motoru.
 
-[EN] Production-ready Full-Stack Retrieval-Augmented Generation (RAG) engine powered by PostgreSQL (pgvector) and Google Gemini 3.6, featuring document-level isolation and interactive citations.
+[EN] Production-ready Full-Stack Retrieval-Augmented Generation (RAG) engine powered by PostgreSQL (pgvector), Drizzle ORM, and Google Gemini 3.6, featuring document-level isolation, interactive citations, and Drizzle Studio visualizer.
 
 ---
 
@@ -10,14 +10,18 @@
 
 1. [Türkçe Dokümantasyon](#-türkçe-dokümantasyon)
    - [Mimarisi ve Özellikler](#özellikler)
+   - [Teknoloji Yığını](#teknoloji-yığını)
    - [Sistem Mimarisi](#sistem-mimarisi)
    - [Kurulum Adımları](#kurulum-adımları)
+   - [Drizzle Studio ile Vektörleri İnceleme](#drizzle-studio-ile-vektörleri-ve-veritabanını-görselleştirme)
    - [Karşılaşılan Teknik Zorluklar ve Çözümler](#karşılaşılan-teknik-zorluklar-ve-çözümler)
    - [Olası Hatalar ve Çözüm Rehberi](#olası-hatalar-ve-çözüm-rehberi)
 2. [English Documentation](#-english-documentation)
    - [Features](#features)
+   - [Tech Stack](#tech-stack)
    - [Architecture](#architecture)
    - [Getting Started](#getting-started)
+   - [Visualizing Data with Drizzle Studio](#visualizing-data-with-drizzle-studio)
    - [Technical Challenges & Engineering Decisions](#technical-challenges--engineering-decisions)
    - [Troubleshooting](#troubleshooting)
 
@@ -27,13 +31,22 @@
 
 ## Özellikler
 
-- **Hibrit Belge İndeksleme:** PDF ve TXT formatındaki dokümanları saf Node.js ayrıştırıcısı (`pdf2json`) ile güvenle okur.
-- **Akıllı Parçalama (Contextual Chunking):** Cümle ve paragraf bütünlüğünü bozmayan, 150 karakter örtüşmeli (overlap) chunking algoritması.
-- **768-Boyutlu Matryoshka Embeddings:** `gemini-embedding-2` modeli kullanılarak üretilen ve HNSW indeks sınırlarına uyumlu hale getirilen vektör temsilleri.
+- **Hibrit Belge İndeksleme:** PDF ve TXT formatındaki dokümanları saf Node.js ayrıştırıcısı (`pdf2json`) ile bellek sızıntısı olmadan okur.
+- **Akıllı Parçalama (Contextual Chunking):** Paragraf ve cümle bütünlüğünü koruyan, 150 karakter örtüşmeli (overlap) sliding-window algoritması.
+- **768-Boyutlu Matryoshka Embeddings:** `gemini-embedding-2` modeli üzerinden üretilen, semantik kaliteden ödün vermeden HNSW indeks sınırlarına uyumlu hale getirilmiş vektörler.
+- **Tip Güvenli ORM Katmanı (Drizzle ORM):** Özel pgvector tipleriyle modellenmiş, tip güvenli veritabanı şeması ve migration yönetimi.
 - **HNSW İndeksli pgvector:** Milisaniyeler mertebesinde kosinüs uzaklığı (`<=>`) araması.
-- **Doküman İzolasyonu (Document Scoping):** İster tüm doküman havuzunda, ister seçilen tek bir doküman özelinde bağlamsal arama. Dokümana özel bağımsız sohbet oturumu.
-- **İnteraktif Atıflar (Interactive Citation Badges):** Yanıt içindeki `[1]`, `[2]` rozetlerine tıklandığında kaynak dokümanın ilgili parçasını ve benzerlik skorunu gösteren modal.
-- **Hazır Demo Dokümanları:** Tek tıkla veritabanına indekslenebilen veya indirilebilen hazır test senaryoları.
+- **Doküman İzolasyonu (Document Scoping):** Tüm havuzda veya seçilen doküman özelinde arama yapabilme; dokümana özel izole chat oturumları.
+- **İnteraktif Atıflar (Citation Badges):** Model yanıtındaki `[1]`, `[2]` butonlarına tıklandığında kaynak metin parçasını ve benzerlik skorunu gösteren modal.
+- **Görsel Veritabanı Yönetimi (Drizzle Studio):** Tek komutla tarayıcı üzerinden tabloları ve 768 boyutlu ham vektörleri inceleme imkanı.
+
+## Teknoloji Yığını
+
+- **Frontend / Fullstack:** Next.js 16 (App Router), TypeScript, Tailwind CSS
+- **Veritabanı & Vektör Deposu:** PostgreSQL 16 + `pgvector` eklentisi (Docker Compose)
+- **ORM & Veri Yönetimi:** Drizzle ORM, Drizzle Studio, node-postgres (`pg`)
+- **Yapay Zeka & Embedding:** Google Gemini SDK (`gemini-embedding-2`, `gemini-3.6-flash`)
+- **Belge Ayrıştırma:** `pdf2json`
 
 ## Sistem Mimarisi
 
@@ -62,7 +75,7 @@
 
 - Node.js 18+
 - Docker ve Docker Compose
-- Google Gemini API Anahtarı ([Google AI Studio](https://aistudio.google.com/) üzerinden ücretsiz temin edilebilir)
+- Google Gemini API Anahtarı ([Google AI Studio](https://aistudio.google.com/))
 
 ### 2. Repoyu Klonlayın ve Bağımlılıkları Yükleyin
 
@@ -122,7 +135,22 @@ USING hnsw (embedding vector_cosine_ops);
 npm run dev
 ```
 
-Tarayıcınızda `http://localhost:3000` adresine gidin. Sol panelden **"Doğrudan Yükle ⚡"** butonuna basarak sistemi anında test edebilirsiniz.
+Tarayıcınızda `http://localhost:3000` adresine gidin. Sol paneldeki hazır örneklerden **"Doğrudan Yükle ⚡"** butonuna basarak sistemi anında deneyebilirsiniz.
+
+---
+
+## Drizzle Studio ile Vektörleri ve Veritabanını Görselleştirme
+
+İndekslenen parçaları ve koordinat vektörlerini görsel arayüz üzerinden incelemek için:
+
+```bash
+npm run db:studio
+```
+
+Tarayıcınızda `https://local.drizzle.studio` adresini açarak:
+
+- `documents`: Yüklenen dosyaların başlıklarını ve kimliklerini (ID),
+- `document_chunks`: Metin kesitlerini, parça sıra numaralarını ve 768 boyutlu ham embedding dizilerini görebilirsiniz.
 
 ---
 
@@ -131,24 +159,24 @@ Tarayıcınızda `http://localhost:3000` adresine gidin. Sol panelden **"Doğrud
 ### 1. `HNSW Index 2000 Dimension Limit` Darboğazı
 
 - **Problem:** Yeni nesil `gemini-embedding-2` modeli varsayılan olarak **3072 boyut** üretir. Ancak PostgreSQL `pgvector` eklentisindeki HNSW indeksi maksimum **2000 boyut** destekler (`ERROR: column cannot have more than 2000 dimensions for hnsw index`).
-- **Mühendislik Çözümü:** İndeksleme hızından taviz vermek yerine, Google'ın _Matryoshka Representation Learning_ özelliğinden faydalanıldı. Model çağrısında `outputDimensionality: 768` parametresi verilerek anlamsal doğruluk korunup vektör boyutu 768'e sabitlendi ve HNSW indeksi devreye alındı.
+- **Mühendislik Çözümü:** İndeksleme hızından taviz verip sequential scan yapmamak adına Google'ın _Matryoshka Representation Learning_ özelliği kullanıldı. `outputDimensionality: 768` konfigürasyonu verilerek vektör boyutu 768'e indirgendi ve HNSW indeksi tam performansla çalıştırıldı.
 
 ### 2. Next.js Turbopack ve `DOMMatrix is not defined` Hatası
 
-- **Problem:** Yaygın kullanılan `pdf-parse` paketi, CommonJS yapısı ve arka planda tarayıcı nesnelerine (`DOMMatrix`, `canvas`) bağımlı olması sebebiyle Next.js App Router sunucu tarafında çökmeye yol açtı.
-- **Mühendislik Çözümü:** Saf Node.js buffer akışlarını kullanan ve hiçbir tarayıcı polifill'ine ihtiyaç duymayan `pdf2json` mimarisine geçildi.
+- **Problem:** `pdf-parse` paketi, arka planda tarayıcı global değişkenlerine (`DOMMatrix`, `canvas`) bağımlı olduğu için Next.js App Router sunucu tarafında çökmeye yol açtı.
+- **Mühendislik Çözümü:** Saf Node.js buffer akışlarını kullanan ve browser polyfill gerektirmeyen `pdf2json` mimarisine geçildi.
 
 ---
 
 ## Olası Hatalar ve Çözüm Rehberi
 
-| Hata Mesajı                                                     | Sebebi                                                                 | Kesin Çözüm                                                                                     |
-| :-------------------------------------------------------------- | :--------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------- |
-| `404 NOT_FOUND: models/text-embedding-004 is not found`         | Google API sürümünde eski modellerin kullanımdan kalkması.             | `gemini-embedding-2` modeline geçin (`src/lib/gemini.ts`).                                      |
-| `404 NOT_FOUND: models/gemini-2.5-flash is no longer available` | Hesabın daha güncel Flash modeline yönlendirilmesi.                    | `gemini-3.6-flash` modelini kullanın (`src/app/api/chat/route.ts`).                             |
-| `expected 768 dimensions, not 3072`                             | PostgreSQL tablosunun 768 boyut beklerken modelin 3072 göndermesi.     | `src/lib/gemini.ts` içinde `config: { outputDimensionality: 768 }` parametresini tanımlayın.    |
-| `API_KEY_INVALID` veya Boş Yanıt                                | `.env.local` dosyasının okunmaması veya anahtarın hatalı olması.       | Sunucuyu yeniden başlatın (`npm run dev`) ve Google AI Studio üzerinden anahtarı teyit edin.    |
-| `Hydration mismatch: cz-shortcut-listen`                        | ColorZilla veya benzeri tarayıcı eklentilerinin DOM'a müdahale etmesi. | `src/app/layout.tsx` dosyasında `<body>` etiketine `suppressHydrationWarning` prop'unu ekleyin. |
+| Hata Mesajı                                | Sebebi                                                             | Kesin Çözüm                                                                                  |
+| :----------------------------------------- | :----------------------------------------------------------------- | :------------------------------------------------------------------------------------------- |
+| `404 NOT_FOUND: models/text-embedding-004` | Modelin güncel API versiyonunda kullanımdan kalkması.              | `gemini-embedding-2` modeline geçin (`src/lib/gemini.ts`).                                   |
+| `404 NOT_FOUND: models/gemini-2.5-flash`   | Güncel olmayan model alias kullanımı.                              | `gemini-3.6-flash` modelini kullanın (`src/app/api/chat/route.ts`).                          |
+| `expected 768 dimensions, not 3072`        | PostgreSQL tablosunun 768 boyut beklerken modelin 3072 göndermesi. | `src/lib/gemini.ts` içinde `config: { outputDimensionality: 768 }` parametresini tanımlayın. |
+| `Error: listen EADDRINUSE: 127.0.0.1:4983` | Drizzle Studio portunun önceki bir process tarafından tutulması.   | `npx kill-port 4983` komutunu çalıştırıp tekrar deneyin.                                     |
+| `Hydration mismatch: cz-shortcut-listen`   | Tarayıcı eklentilerinin (ColorZilla vb.) DOM'a müdahale etmesi.    | `src/app/layout.tsx` dosyasında `<body>` etiketine `suppressHydrationWarning` ekleyin.       |
 
 ---
 
@@ -156,13 +184,22 @@ Tarayıcınızda `http://localhost:3000` adresine gidin. Sol panelden **"Doğrud
 
 ## Features
 
-- **Hybrid Document Ingestion:** Production-ready parsing for PDF and TXT documents using pure Node.js streams (`pdf2json`).
-- **Contextual Chunking:** Sliding-window text chunker (800 chars) with 150-char overlap to preserve semantic continuity across chunk borders.
+- **Hybrid Document Ingestion:** Memory-efficient stream parsing for PDF and TXT documents using `pdf2json`.
+- **Contextual Chunking:** Sliding-window text chunker (800 chars) with 150-char overlap to preserve semantic continuity across chunk boundaries.
 - **768-d Matryoshka Embeddings:** State-of-the-art `gemini-embedding-2` embeddings dimensionality-reduced to 768 to comply with HNSW indexing limits without semantic degradation.
-- **HNSW Vector Search with pgvector:** High-performance Approximate Nearest Neighbor (ANN) search using cosine distance (`<=>`).
-- **Document-Level Scoping & Isolation:** Query across the entire knowledge base or restrict retrieval to a specific document. Isolated chat histories per document.
-- **Interactive Citations:** Perplexity-style inline reference badges (`[1]`, `[2]`) triggering detail modals displaying exact source snippets and similarity scores.
-- **One-Click Demo Ingestion:** Integrated sample datasets (HR Policy & API Specifications) for instant verification.
+- **Type-Safe ORM Layer (Drizzle ORM):** Custom pgvector types, type-safe schema definitions, and seamless database operations.
+- **HNSW Vector Search with pgvector:** Sub-millisecond Approximate Nearest Neighbor (ANN) search using cosine distance (`<=>`).
+- **Document-Level Scoping & Isolation:** Query across the entire knowledge base or scope retrieval down to a specific document. Isolated chat history per document.
+- **Interactive Citations:** Perplexity-style inline reference badges (`[1]`, `[2]`) opening modals that inspect exact source text chunks and similarity scores.
+- **Visual Vector Inspection (Drizzle Studio):** Zero-config browser-based GUI to inspect documents, chunk tokens, and high-dimensional vector embeddings.
+
+## Tech Stack
+
+- **Frontend / Fullstack:** Next.js 16 (App Router), TypeScript, Tailwind CSS
+- **Database & Vector Store:** PostgreSQL 16 with `pgvector` (Docker Compose)
+- **ORM & Data Layer:** Drizzle ORM, Drizzle Studio, node-postgres (`pg`)
+- **AI & Embedding Engine:** Google Gemini SDK (`gemini-embedding-2`, `gemini-3.6-flash`)
+- **Document Parser:** `pdf2json`
 
 ## Architecture
 
@@ -255,17 +292,29 @@ Open `http://localhost:3000`. Click **"Doğrudan Yükle ⚡"** on any sample doc
 
 ---
 
+## Visualizing Data with Drizzle Studio
+
+To visually explore the database tables, stored chunks, and raw embedding arrays:
+
+```bash
+npm run db:studio
+```
+
+Open `https://local.drizzle.studio` in your browser to inspect records in real-time.
+
+---
+
 ## Technical Challenges & Engineering Decisions
 
 ### 1. Handling pgvector's HNSW 2000-Dimension Limit
 
 - **Challenge:** Google's `gemini-embedding-2` produces 3072-dimensional embeddings by default. However, PostgreSQL's `pgvector` HNSW index limits indexing to 2000 dimensions (`ERROR: column cannot have more than 2000 dimensions for hnsw index`).
-- **Decision:** Dropping the HNSW index would degrade search latency from sub-millisecond to sequential scan ($O(N)$). Leveraging Google's _Matryoshka Representation Learning_, we set `outputDimensionality: 768`. This preserves semantic fidelity, reduces database memory footprint by 4x, and enables full HNSW indexing.
+- **Decision:** Dropping the index would force sequential scans ($O(N)$). Leveraging Google's _Matryoshka Representation Learning_, we set `outputDimensionality: 768`. This preserves semantic fidelity, reduces database memory footprint by 4x, and enables full HNSW indexing.
 
-### 2. Turbopack Compatibility & Browser Polifill Crashes
+### 2. Turbopack Compatibility & Browser Polyfill Crashes
 
-- **Challenge:** Traditional libraries like `pdf-parse` rely on outdated `pdfjs-dist` builds that attempt to access browser globals (`DOMMatrix`, `canvas`), crashing Next.js App Router during server execution.
-- **Decision:** Replaced with `pdf2json`, a pure Node.js buffer-based parser that executes deterministically across serverless and Node environments.
+- **Challenge:** Traditional libraries like `pdf-parse` rely on outdated builds referencing browser globals (`DOMMatrix`, `canvas`), crashing Next.js App Router during server runtime.
+- **Decision:** Replaced with `pdf2json`, a pure Node.js buffer-based parser that executes deterministically across serverless and server environments.
 
 ---
 
@@ -276,7 +325,7 @@ Open `http://localhost:3000`. Click **"Doğrudan Yükle ⚡"** on any sample doc
 | `404 NOT_FOUND: models/text-embedding-004` | Deprecated embedding model in current API tier.                     | Upgraded to `gemini-embedding-2`.                                        |
 | `404 NOT_FOUND: models/gemini-2.5-flash`   | Tier restriction on legacy Flash alias.                             | Upgraded to `gemini-3.6-flash`.                                          |
 | `expected 768 dimensions, not 3072`        | Database vector column mismatch.                                    | Ensure `outputDimensionality: 768` is configured in `src/lib/gemini.ts`. |
-| `API_KEY_INVALID`                          | Malformed or missing environment key.                               | Verify credentials in `.env.local` and restart the server.               |
+| `Error: listen EADDRINUSE: 127.0.0.1:4983` | Port 4983 occupied by a lingering process.                          | Run `npx kill-port 4983` and restart Drizzle Studio.                     |
 | `Hydration mismatch: cz-shortcut-listen`   | Third-party browser extensions (e.g. ColorZilla) modifying the DOM. | Applied `suppressHydrationWarning` on root `<body>`.                     |
 
 ---

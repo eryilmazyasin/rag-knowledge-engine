@@ -7,12 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:init": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' src/lib/init-db.ts"
+    "db:init": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' src/lib/init-db.ts",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@google/genai": "^2.21.0",
     "ai": "^7.0.90",
     "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
     "next": "16.3.4",
     "pdf2json": "^4.0.3",
     "pg": "^8.23.0",
@@ -25,6 +27,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
