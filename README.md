@@ -176,7 +176,6 @@ Tarayıcınızda `https://local.drizzle.studio` adresini açarak:
 | `404 NOT_FOUND: models/gemini-2.5-flash`   | Güncel olmayan model alias kullanımı.                              | `gemini-3.6-flash` modelini kullanın (`src/app/api/chat/route.ts`).                          |
 | `expected 768 dimensions, not 3072`        | PostgreSQL tablosunun 768 boyut beklerken modelin 3072 göndermesi. | `src/lib/gemini.ts` içinde `config: { outputDimensionality: 768 }` parametresini tanımlayın. |
 | `Error: listen EADDRINUSE: 127.0.0.1:4983` | Drizzle Studio portunun önceki bir process tarafından tutulması.   | `npx kill-port 4983` komutunu çalıştırıp tekrar deneyin.                                     |
-| `Hydration mismatch: cz-shortcut-listen`   | Tarayıcı eklentilerinin (ColorZilla vb.) DOM'a müdahale etmesi.    | `src/app/layout.tsx` dosyasında `<body>` etiketine `suppressHydrationWarning` ekleyin.       |
 
 ---
 
@@ -320,13 +319,12 @@ Open `https://local.drizzle.studio` in your browser to inspect records in real-t
 
 ## Troubleshooting
 
-| Error                                      | Cause                                                               | Resolution                                                               |
-| :----------------------------------------- | :------------------------------------------------------------------ | :----------------------------------------------------------------------- |
-| `404 NOT_FOUND: models/text-embedding-004` | Deprecated embedding model in current API tier.                     | Upgraded to `gemini-embedding-2`.                                        |
-| `404 NOT_FOUND: models/gemini-2.5-flash`   | Tier restriction on legacy Flash alias.                             | Upgraded to `gemini-3.6-flash`.                                          |
-| `expected 768 dimensions, not 3072`        | Database vector column mismatch.                                    | Ensure `outputDimensionality: 768` is configured in `src/lib/gemini.ts`. |
-| `Error: listen EADDRINUSE: 127.0.0.1:4983` | Port 4983 occupied by a lingering process.                          | Run `npx kill-port 4983` and restart Drizzle Studio.                     |
-| `Hydration mismatch: cz-shortcut-listen`   | Third-party browser extensions (e.g. ColorZilla) modifying the DOM. | Applied `suppressHydrationWarning` on root `<body>`.                     |
+| Error                                      | Cause                                           | Resolution                                                               |
+| :----------------------------------------- | :---------------------------------------------- | :----------------------------------------------------------------------- |
+| `404 NOT_FOUND: models/text-embedding-004` | Deprecated embedding model in current API tier. | Upgraded to `gemini-embedding-2`.                                        |
+| `404 NOT_FOUND: models/gemini-2.5-flash`   | Tier restriction on legacy Flash alias.         | Upgraded to `gemini-3.6-flash`.                                          |
+| `expected 768 dimensions, not 3072`        | Database vector column mismatch.                | Ensure `outputDimensionality: 768` is configured in `src/lib/gemini.ts`. |
+| `Error: listen EADDRINUSE: 127.0.0.1:4983` | Port 4983 occupied by a lingering process.      | Run `npx kill-port 4983` and restart Drizzle Studio.                     |
 
 ---
 
