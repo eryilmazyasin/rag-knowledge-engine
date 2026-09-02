@@ -21,22 +21,20 @@ export default function ChatMessage({ role, content, sources }: MessageProps) {
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
   const isUser = role === "user";
 
-  // [Kaynak X] veya [X] kalıplarını interaktif butonlara dönüştüren parser
+  // Parses patterns like [Source 1], [1], [Kaynak 1] into interactive buttons
   const renderFormattedContent = (text: string) => {
     if (isUser || !sources || sources.length === 0) {
       return text;
     }
 
-    // [Kaynak X] veya [X] eşleşmelerini yakala
     const parts = text.split(
-      /(\[(?:Kaynak\s*)?\d+(?:,\s*(?:Kaynak\s*)?\d+)*\])/g,
+      /(\[(?:Source\s*|Kaynak\s*)?\d+(?:,\s*(?:Source\s*|Kaynak\s*)?\d+)*\])/gi,
     );
 
     return parts.map((part, pIdx) => {
       const match = part.match(/\[(.*?)\]/);
       if (!match) return part;
 
-      // İçindeki numaraları çek (örn: "Kaynak 1, 2" -> [1, 2])
       const numbers = match[1].match(/\d+/g);
       if (!numbers) return part;
 
@@ -51,10 +49,10 @@ export default function ChatMessage({ role, content, sources }: MessageProps) {
                 key={num}
                 type="button"
                 onClick={() => sourceItem && setSelectedSource(sourceItem)}
-                className="inline-flex items-center px-1.5 py-0.2 text-[11px] font-semibold font-mono bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 rounded hover:bg-emerald-800 hover:text-white transition-all shadow-xs"
+                className="inline-flex items-center px-1.5 py-0.5 text-[11px] font-semibold font-mono bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 rounded hover:bg-emerald-800 hover:text-white transition-all shadow-xs"
                 title={
                   sourceItem
-                    ? `${sourceItem.documentTitle} - %${(Number(sourceItem.similarityScore) * 100).toFixed(0)} Eşleşme`
+                    ? `${sourceItem.documentTitle} - ${(Number(sourceItem.similarityScore) * 100).toFixed(0)}% Match`
                     : undefined
                 }
               >
@@ -82,11 +80,11 @@ export default function ChatMessage({ role, content, sources }: MessageProps) {
           {renderFormattedContent(content)}
         </div>
 
-        {/* Alt Kaynak Butonları (Hızlı Erişim) */}
+        {/* References Footer */}
         {!isUser && sources && sources.length > 0 && (
           <div className="mt-4 pt-3 border-t border-neutral-800/70 flex flex-wrap items-center gap-2">
             <span className="text-[11px] text-neutral-400 font-medium">
-              Referanslar:
+              References:
             </span>
             {sources.map((src) => (
               <button
@@ -110,14 +108,14 @@ export default function ChatMessage({ role, content, sources }: MessageProps) {
         )}
       </div>
 
-      {/* Kaynak Detay Modal / Drawer */}
+      {/* Citation Detail Modal */}
       {selectedSource && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-xl w-full p-5 space-y-4 shadow-2xl">
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400 bg-emerald-950 border border-emerald-800 px-2 py-0.5 rounded">
-                  Kaynak Detayı [{selectedSource.sourceIndex}]
+                  Source Inspector [{selectedSource.sourceIndex}]
                 </span>
                 <h3 className="text-sm font-semibold text-white mt-1.5">
                   {selectedSource.documentTitle}
@@ -134,13 +132,13 @@ export default function ChatMessage({ role, content, sources }: MessageProps) {
 
             <div className="space-y-1">
               <div className="flex justify-between text-xs text-neutral-400">
-                <span>Vektör Benzerlik Skoru:</span>
+                <span>Vector Similarity Score:</span>
                 <span className="text-emerald-400 font-mono font-semibold">
                   %{(Number(selectedSource.similarityScore) * 100).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between text-xs text-neutral-400">
-                <span>Parça İndeksi (Chunk):</span>
+                <span>Chunk Sequence:</span>
                 <span className="text-neutral-200 font-mono">
                   #{selectedSource.chunkIndex + 1}
                 </span>
@@ -156,7 +154,7 @@ export default function ChatMessage({ role, content, sources }: MessageProps) {
               onClick={() => setSelectedSource(null)}
               className="w-full py-2 bg-neutral-800 hover:bg-neutral-700 text-xs font-medium text-white rounded-lg transition-colors"
             >
-              Kapat
+              Close
             </button>
           </div>
         </div>

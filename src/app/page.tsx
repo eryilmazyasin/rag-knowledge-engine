@@ -10,9 +10,9 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState<string>("all");
   const [selectedDocTitle, setSelectedDocTitle] =
-    useState<string>("Tüm Belgeler");
+    useState<string>("All Documents");
 
-  // Her dokümanın kendi chat oturumunu hafızada tutan session state'i
+  // Independent chat session cache per document scope
   const [chatSessions, setChatSessions] = useState<
     Record<string, MessageProps[]>
   >({});

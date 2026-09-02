@@ -35,7 +35,7 @@ export default function Sidebar({
         setDocuments(data.documents || []);
       }
     } catch (e) {
-      console.error("Dokümanlar alınamadı:", e);
+      console.error("Failed to load documents:", e);
     }
   };
 
@@ -48,7 +48,7 @@ export default function Sidebar({
     if (!file) return;
 
     setIsProcessing(true);
-    setStatus("Doküman parçalanıyor ve pgvector ile indeksleniyor...");
+    setStatus("Chunking and embedding document into pgvector...");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -61,12 +61,12 @@ export default function Sidebar({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      setStatus(`✅ ${file.name} başarıyla indekslendi.`);
+      setStatus(`✅ ${file.name} successfully indexed.`);
       await fetchDocuments();
       onSelectDocument(data.documentId, file.name);
       setFile(null);
     } catch (err: any) {
-      setStatus(`❌ Hata: ${err.message}`);
+      setStatus(`❌ Error: ${err.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -74,7 +74,7 @@ export default function Sidebar({
 
   const loadSampleDocument = async (fileName: string, title: string) => {
     setIsProcessing(true);
-    setStatus(`Örnek "${title}" yükleniyor...`);
+    setStatus(`Loading sample "${title}"...`);
 
     try {
       const res = await fetch(`/samples/${fileName}`);
@@ -91,11 +91,11 @@ export default function Sidebar({
       const data = await uploadRes.json();
       if (!uploadRes.ok) throw new Error(data.error);
 
-      setStatus(`✅ ${title} başarıyla indekslendi.`);
+      setStatus(`✅ ${title} successfully indexed.`);
       await fetchDocuments();
       onSelectDocument(data.documentId, title);
     } catch (err: any) {
-      setStatus(`❌ Hata: ${err.message}`);
+      setStatus(`❌ Error: ${err.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -105,7 +105,7 @@ export default function Sidebar({
     e.stopPropagation();
     if (
       !confirm(
-        "Bu dokümanı ve tüm vektör parçalarını silmek istediğinize emin misiniz?",
+        "Are you sure you want to delete this document and all associated vector chunks?",
       )
     )
       return;
@@ -114,12 +114,12 @@ export default function Sidebar({
       const res = await fetch(`/api/documents?id=${id}`, { method: "DELETE" });
       if (res.ok) {
         if (selectedDocId === id) {
-          onSelectDocument("all", "Tüm Belgeler");
+          onSelectDocument("all", "All Documents");
         }
         await fetchDocuments();
       }
     } catch (e) {
-      console.error("Silinemedi:", e);
+      console.error("Failed to delete:", e);
     }
   };
 
@@ -134,17 +134,18 @@ export default function Sidebar({
             Knowledge Engine
           </h1>
           <p className="text-xs text-neutral-400 mt-1 leading-normal">
-            pgvector ve Gemini 3.6 ile akıllı doküman sorgulama.
+            Vector embeddings & semantic retrieval powered by Gemini 3.6 and
+            pgvector.
           </p>
         </div>
 
-        {/* Dosya Yükleme */}
+        {/* Upload Form */}
         <form
           onSubmit={handleUpload}
           className="space-y-3 pt-3 border-t border-neutral-800"
         >
           <label className="block text-xs font-medium text-neutral-300">
-            Özel Belge Yükle (.pdf, .txt)
+            Upload Document (.pdf, .txt)
           </label>
           <input
             type="file"
@@ -155,25 +156,25 @@ export default function Sidebar({
           <button
             type="submit"
             disabled={!file || isProcessing}
-            className="w-full py-2 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium text-white transition-all shadow-sm"
+            className="cursor-pointer w-full py-2 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium text-white transition-all shadow-sm"
           >
-            {isProcessing ? "İşleniyor..." : "Belgeyi İndeksle"}
+            {isProcessing ? "Processing..." : "Index Document"}
           </button>
         </form>
 
-        {/* Doküman Havuzu Listesi */}
+        {/* Document Pool / Scoping */}
         <div className="pt-3 border-t border-neutral-800 space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-              Aktif Doküman Havuzu ({documents.length})
+              Document Scope ({documents.length})
             </span>
           </div>
 
           <div className="space-y-1.5 max-h-40 overflow-y-auto">
-            {/* Tüm Belgeler */}
+            {/* Global Search Option */}
             <button
               type="button"
-              onClick={() => onSelectDocument("all", "Tüm Belgeler")}
+              onClick={() => onSelectDocument("all", "All Documents")}
               className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all border flex items-center justify-between ${
                 selectedDocId === "all"
                   ? "bg-emerald-950/60 border-emerald-700/80 text-emerald-300"
@@ -182,14 +183,16 @@ export default function Sidebar({
             >
               <div className="flex items-center gap-2">
                 <span>🌐</span>
-                <span className="font-medium">Tüm Belgelerde Ara</span>
+                <span className="cursor-pointer font-medium">
+                  Search All Documents
+                </span>
               </div>
               {selectedDocId === "all" && (
-                <span className="text-emerald-400 text-[10px]">Aktif</span>
+                <span className="text-emerald-400 text-[10px]">Active</span>
               )}
             </button>
 
-            {/* Tekil Belgeler */}
+            {/* Individual Documents */}
             {documents.map((doc) => (
               <div
                 key={doc.id}
@@ -205,20 +208,20 @@ export default function Sidebar({
                     {doc.title}
                   </div>
                   <div className="text-[10px] text-neutral-500 font-mono">
-                    {doc.chunk_count} parça (chunk)
+                    {doc.chunk_count} chunks
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
                   {selectedDocId === doc.id && (
                     <span className="text-[10px] text-emerald-400 bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800">
-                      Seçili
+                      Selected
                     </span>
                   )}
                   <button
                     type="button"
                     onClick={(e) => handleDeleteDocument(doc.id, e)}
                     className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-red-400 p-1 rounded transition-opacity"
-                    title="Dokümanı Sil"
+                    title="Delete document"
                   >
                     🗑️
                   </button>
@@ -228,16 +231,16 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* Örnek Belgeler */}
+        {/* Sample Documents */}
         <div className="pt-3 border-t border-neutral-800 space-y-2">
           <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider block">
-            Örnek Belgeler
+            Sample Documents
           </span>
 
           <div className="grid grid-cols-2 gap-2">
             <div className="p-2 bg-neutral-900 border border-neutral-800 rounded-lg flex flex-col justify-between">
               <span className="text-[11px] font-medium text-neutral-200">
-                🏢 Şirket Politikası
+                🏢 Company Policy
               </span>
               <div className="flex gap-1 mt-2">
                 <a
@@ -245,27 +248,24 @@ export default function Sidebar({
                   download="company-policy.txt"
                   className="flex-1 py-1 bg-neutral-800 hover:bg-neutral-700 rounded text-center text-[10px] text-neutral-300"
                 >
-                  İndir
+                  Download
                 </a>
                 <button
                   type="button"
                   disabled={isProcessing}
                   onClick={() =>
-                    loadSampleDocument(
-                      "company-policy.txt",
-                      "Şirket Politikası",
-                    )
+                    loadSampleDocument("company-policy.txt", "Company Policy")
                   }
-                  className="flex-1 py-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800/80 rounded text-center text-[10px] text-emerald-300 disabled:opacity-50"
+                  className="cursor-pointer flex-1 py-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800/80 rounded text-center text-[10px] text-emerald-300 disabled:opacity-50"
                 >
-                  Yükle ⚡
+                  Ingest ⚡
                 </button>
               </div>
             </div>
 
             <div className="p-2 bg-neutral-900 border border-neutral-800 rounded-lg flex flex-col justify-between">
               <span className="text-[11px] font-medium text-neutral-200">
-                ⚡ API Mimarisi
+                ⚡ API Specs
               </span>
               <div className="flex gap-1 mt-2">
                 <a
@@ -273,17 +273,17 @@ export default function Sidebar({
                   download="api-spec.txt"
                   className="flex-1 py-1 bg-neutral-800 hover:bg-neutral-700 rounded text-center text-[10px] text-neutral-300"
                 >
-                  İndir
+                  Download
                 </a>
                 <button
                   type="button"
                   disabled={isProcessing}
                   onClick={() =>
-                    loadSampleDocument("api-spec.txt", "API Mimarisi")
+                    loadSampleDocument("api-spec.txt", "API Specs")
                   }
-                  className="flex-1 py-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800/80 rounded text-center text-[10px] text-emerald-300 disabled:opacity-50"
+                  className="cursor-pointer flex-1 py-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800/80 rounded text-center text-[10px] text-emerald-300 disabled:opacity-50"
                 >
-                  Yükle ⚡
+                  Ingest ⚡
                 </button>
               </div>
             </div>
@@ -297,7 +297,7 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* Stack Footer */}
+      {/* Tech Stack Footer */}
       <div className="border-t border-neutral-800 pt-3 space-y-1 text-[11px] text-neutral-500">
         <div className="flex justify-between">
           <span>Vector Store:</span>

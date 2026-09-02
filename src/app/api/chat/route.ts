@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     if (relevantChunks.length === 0) {
       return NextResponse.json({
         answer:
-          "Seçili dokümanda veya veritabanında sorgunuzla eşleşen bilgi bulunamadı.",
+          "No relevant information found in the selected document scope for your query.",
         sources: [],
       });
     }
