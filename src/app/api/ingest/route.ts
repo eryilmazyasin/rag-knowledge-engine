@@ -2,11 +2,26 @@ import { splitTextIntoChunks } from "@/lib/chunker";
 import { query } from "@/lib/db";
 import { generateEmbedding } from "@/lib/gemini";
 import { NextRequest, NextResponse } from "next/server";
+import PDFParser from "pdf2json";
 
-// [ÖĞRENME NOTU: Turbopack / Next.js CJS Uyumluluğu]
-// pdf-parse saf bir CommonJS paketidir ve ESM default export barındırmaz.
-// Derleyici çökmesini engellemek için doğrudan require ile içe aktarılır.
-const pdfParse = require("pdf-parse");
+// PDF dosyasından metin çıkaran yardımcı Promise fonksiyonu
+function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const pdfParser = new (PDFParser as any)(null, 1);
+
+    pdfParser.on("pdfParser_dataError", (errData: any) => {
+      reject(errData.parserError);
+    });
+
+    pdfParser.on("pdfParser_dataReady", () => {
+      // pdf2json ham metni encode edilmiş URL formatında döner, decodeURIComponent ile çözeriz
+      const rawText = (pdfParser as any).getRawTextContent();
+      resolve(decodeURIComponent(rawText));
+    });
+
+    pdfParser.parseBuffer(buffer);
+  });
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,12 +45,11 @@ export async function POST(req: NextRequest) {
 
     // 1. Dosya Türüne Göre Metin Ayrıştırma (Parsing)
     if (fileType === "pdf") {
-      console.log("⏳ PDF ayrıştırılıyor (pdf-parse)...");
+      console.log("⏳ PDF ayrıştırılıyor (pdf2json)...");
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      const pdfData = await pdfParse(buffer);
-      extractedText = pdfData.text;
-      console.log(`📄 PDF başarıyla okundu. Toplam Sayfa: ${pdfData.numpages}`);
+      extractedText = await extractTextFromPDF(buffer);
+      console.log("📄 PDF başarıyla çözümlendi.");
     } else {
       console.log("📝 Düz metin dosyası okunuyor...");
       extractedText = await file.text();
@@ -49,26 +63,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log(`📊 Toplam çıkarılan karakter sayısı: ${extractedText.length}`);
+
     // 2. Ana doküman kaydını oluştur
     const docResult = await query(
       `INSERT INTO documents (title, file_type) VALUES ($1, $2) RETURNING id`,
       [file.name, fileType],
     );
     const documentId = docResult.rows[0].id;
-    console.log(
-      `💾 Doküman PostgreSQL 'documents' tablosuna yazıldı. ID: ${documentId}`,
-    );
+    console.log(`💾 Doküman 'documents' tablosuna yazıldı. ID: ${documentId}`);
 
     // 3. Metni Akıllı Parçalara (Chunk) Ayırma
-    console.log(
-      "✂️ Metin akıllı parçalama (chunking) algoritmasına sokuluyor...",
-    );
+    console.log("✂️ Metin parçalama (chunking) algoritmasına sokuluyor...");
     const chunks = splitTextIntoChunks(extractedText);
     console.log(
       `✅ Chunking tamamlandı: Toplam ${chunks.length} parça üretildi.`,
     );
 
-    // 4. Her parçayı vektörleştir ve pgvector'e kaydet
+    // 4. Vektörleştirme (Embedding) ve pgvector'e kaydetme
     console.log(
       "🧠 Vektörleştirme (Embedding) ve pgvector kayıt işlemi başlıyor...",
     );
@@ -77,20 +89,7 @@ export async function POST(req: NextRequest) {
       const chunkContent = chunks[i];
       const chunkStartTime = Date.now();
 
-      // Gemini Embedding API çağrısı
       const embedding = await generateEmbedding(chunkContent);
-
-      // İlk chunk için konsola eğitici bilgi basalım
-      if (i === 0) {
-        console.log(`\n🔍 [İLK CHUNK ÖRNEĞİ]:`);
-        console.log(`   İçerik Başlangıcı: "${chunkContent.slice(0, 80)}..."`);
-        console.log(`   Vektör Boyutu: ${embedding.length} eleman (Float32)`);
-        console.log(
-          `   Örnek Vektör Kesiti: [${embedding.slice(0, 3).join(", ")}, ...]`,
-        );
-      }
-
-      // PostgreSQL pgvector syntax formatı: '[0.12, -0.45, ...]'
       const embeddingSqlString = `[${embedding.join(",")}]`;
 
       await query(

@@ -3,19 +3,46 @@
 import { useState } from "react";
 
 import ChatArea from "@/components/ChatArea";
+import { MessageProps } from "@/components/ChatMessage";
 import Sidebar from "@/components/Sidebar";
 
 export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedDocId, setSelectedDocId] = useState<string>("all");
+  const [selectedDocTitle, setSelectedDocTitle] =
+    useState<string>("Tüm Belgeler");
+
+  // Her dokümanın kendi chat oturumunu hafızada tutan session state'i
+  const [chatSessions, setChatSessions] = useState<
+    Record<string, MessageProps[]>
+  >({});
+
+  const handleSelectDocument = (id: string, title: string) => {
+    setSelectedDocId(id);
+    setSelectedDocTitle(title);
+  };
+
+  const handleUpdateMessages = (docId: string, messages: MessageProps[]) => {
+    setChatSessions((prev) => ({
+      ...prev,
+      [docId]: messages,
+    }));
+  };
 
   return (
     <main className="flex h-screen bg-neutral-950 text-neutral-100 antialiased overflow-hidden">
       <Sidebar
         isProcessing={isProcessing}
         setIsProcessing={setIsProcessing}
-        onIngestSuccess={(msg) => console.log(msg)}
+        selectedDocId={selectedDocId}
+        onSelectDocument={handleSelectDocument}
       />
-      <ChatArea />
+      <ChatArea
+        selectedDocId={selectedDocId}
+        selectedDocTitle={selectedDocTitle}
+        messages={chatSessions[selectedDocId] || []}
+        setMessages={(msgs) => handleUpdateMessages(selectedDocId, msgs)}
+      />
     </main>
   );
 }

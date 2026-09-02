@@ -4,20 +4,32 @@ import { useEffect, useRef, useState } from "react";
 
 import ChatMessage, { MessageProps } from "./ChatMessage";
 
-export default function ChatArea() {
-  const [messages, setMessages] = useState<MessageProps[]>([]);
+interface ChatAreaProps {
+  selectedDocId: string;
+  selectedDocTitle: string;
+  messages: MessageProps[];
+  setMessages: (messages: MessageProps[]) => void;
+}
+
+export default function ChatArea({
+  selectedDocId,
+  selectedDocTitle,
+  messages,
+  setMessages,
+}: ChatAreaProps) {
   const [inputQuestion, setInputQuestion] = useState("");
   const [isAnswering, setIsAnswering] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isAnswering]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [selectedDocId]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,21 +38,28 @@ export default function ChatArea() {
     const userQuery = inputQuestion.trim();
     setInputQuestion("");
 
-    setMessages((prev) => [...prev, { role: "user", content: userQuery }]);
+    const newMessages: MessageProps[] = [
+      ...messages,
+      { role: "user", content: userQuery },
+    ];
+    setMessages(newMessages);
     setIsAnswering(true);
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: userQuery }),
+        body: JSON.stringify({
+          question: userQuery,
+          documentId: selectedDocId,
+        }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      setMessages((prev) => [
-        ...prev,
+      setMessages([
+        ...newMessages,
         {
           role: "assistant",
           content: data.answer,
@@ -48,11 +67,11 @@ export default function ChatArea() {
         },
       ]);
     } catch (err: any) {
-      setMessages((prev) => [
-        ...prev,
+      setMessages([
+        ...newMessages,
         {
           role: "assistant",
-          content: `Hata oluştu: ${err.message}`,
+          content: `Hata: ${err.message}`,
         },
       ]);
     } finally {
@@ -62,16 +81,38 @@ export default function ChatArea() {
 
   return (
     <section className="w-2/3 flex flex-col h-full bg-neutral-950">
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      {/* Üst Bar: Aktif Doküman Kapsamı */}
+      <div className="px-6 py-3 border-b border-neutral-800/80 bg-neutral-900/30 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="text-xs font-medium text-neutral-300">
+            Aktif İndeks:{" "}
+            <strong className="text-emerald-400 font-mono">
+              {selectedDocTitle}
+            </strong>
+          </span>
+        </div>
+        <span className="text-[11px] bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-2.5 py-0.5 rounded-full font-medium">
+          {selectedDocId === "all"
+            ? "Tüm Belgeler Kapsamında"
+            : "Belgeye Özel Oturum"}
+        </span>
+      </div>
+
+      {/* Mesaj Akışı */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-5">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center text-neutral-500 space-y-3">
-            <div className="w-12 h-12 rounded-full border border-neutral-800 flex items-center justify-center text-lg">
+            <div className="w-12 h-12 rounded-full border border-neutral-800 bg-neutral-900 flex items-center justify-center text-xl">
               💡
             </div>
-            <p className="text-sm">Doküman sorgulama için hazır.</p>
-            <p className="text-xs text-neutral-600 max-w-sm">
-              Sol panelden bir belge yükleyin veya örnek dokümanları kullanarak
-              semantik sorular sorun.
+            <p className="text-sm font-medium text-neutral-300">
+              {selectedDocTitle}
+            </p>
+            <p className="text-xs text-neutral-400 max-w-sm leading-relaxed">
+              {selectedDocId === "all"
+                ? "Havuzdaki tüm dokümanlar üzerinden arama yapabilirsiniz."
+                : `"${selectedDocTitle}" dokümanına özel sorularınızı aşağıdan yöneltebilirsiniz.`}
             </p>
           </div>
         ) : (
@@ -86,29 +127,36 @@ export default function ChatArea() {
         )}
 
         {isAnswering && (
-          <div className="flex items-center space-y-2">
-            <div className="bg-neutral-900 border border-neutral-800 px-4 py-2.5 rounded-2xl rounded-bl-none text-xs text-neutral-400 animate-pulse">
-              Semantik arama yapılıyor ve yanıt üretiliyor...
+          <div className="flex items-center space-x-2">
+            <div className="bg-neutral-900 border border-neutral-800 px-4 py-3 rounded-2xl rounded-bl-none text-xs text-emerald-400 flex items-center gap-2">
+              <span className="animate-spin text-sm">⚙️</span>
+              <span>Semantik arama yapılıyor ve yanıt derleniyor...</span>
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-neutral-800 bg-neutral-900/30">
+      {/* Mesaj Giriş Alanı */}
+      <div className="p-4 border-t border-neutral-800 bg-neutral-900/40">
         <form onSubmit={handleSendMessage} className="flex gap-2">
           <input
+            ref={inputRef}
             type="text"
             value={inputQuestion}
             onChange={(e) => setInputQuestion(e.target.value)}
-            placeholder="Yüklenen belgeler hakkında soru sorun..."
+            placeholder={
+              selectedDocId === "all"
+                ? "Tüm doküman havuzu hakkında bir soru sorun..."
+                : `"${selectedDocTitle}" hakkında bir soru sorun...`
+            }
             disabled={isAnswering}
-            className="flex-1 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-emerald-500 transition-colors"
+            className="flex-1 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-normal"
           />
           <button
             type="submit"
             disabled={!inputQuestion.trim() || isAnswering}
-            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-medium text-white transition-all shadow-sm"
+            className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium text-white transition-all shadow-sm"
           >
             Gönder
           </button>
