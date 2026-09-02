@@ -2,8 +2,11 @@ import { splitTextIntoChunks } from "@/lib/chunker";
 import { query } from "@/lib/db";
 import { generateEmbedding } from "@/lib/gemini";
 import { NextRequest, NextResponse } from "next/server";
-// @ts-ignore
-import pdf from "pdf-parse";
+
+// [ÖĞRENME NOTU: Turbopack / Next.js CJS Uyumluluğu]
+// pdf-parse saf bir CommonJS paketidir ve ESM default export barındırmaz.
+// Derleyici çökmesini engellemek için doğrudan require ile içe aktarılır.
+const pdfParse = require("pdf-parse");
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +33,7 @@ export async function POST(req: NextRequest) {
       console.log("⏳ PDF ayrıştırılıyor (pdf-parse)...");
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      const pdfData = await pdf(buffer);
+      const pdfData = await pdfParse(buffer);
       extractedText = pdfData.text;
       console.log(`📄 PDF başarıyla okundu. Toplam Sayfa: ${pdfData.numpages}`);
     } else {
@@ -45,8 +48,6 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-
-    console.log(`📊 Toplam çıkarılan karakter sayısı: ${extractedText.length}`);
 
     // 2. Ana doküman kaydını oluştur
     const docResult = await query(

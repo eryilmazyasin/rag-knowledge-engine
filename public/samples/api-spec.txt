@@ -1,0 +1,12 @@
+ACME CLOUD KİMLİK DOĞRULAMA VE HIZ LİMİTİ API DOKÜMANTASYONU
+
+1. AUTHENTICATION (KİMLİK DOĞRULAMA)
+Tüm istekler 'Authorization: Bearer <token>' başlığı (header) ile yapılmalıdır. Token geçerlilik süresi tam 60 dakikadır. Süresi dolan token'lar için 'AUTH_TOKEN_EXPIRED' hata kodu ve HTTP 401 Unauthorized yanıtı döner. Yenileme için '/api/v1/auth/refresh' endpoint'i kullanılır.
+
+2. RATE LIMITING (HIZ SINIRLARI)
+- Ücretsiz Plan: Dakikada maksimum 60 istek (ip-based). Aşıldığında 'RATE_LIMIT_EXCEEDED' koduyla HTTP 429 döner ve başlıkta 'Retry-After' süresi iletilir.
+- Enterprise Plan: Saniyede 200 istek (API-key based). Dedicated redis cluster üzerinden rate limit kontrolü yapılır.
+
+3. PAYLOAD LIMITS VE DESTEKLENEN DOSYALAR
+API üzerinden tek seferde yüklenebilecek maksimum payload boyutu 25MB'dır. Sadece application/json ve multipart/form-data kabul edilir.
+Desteklenen formatlar: text/plain, application/pdf.
