@@ -80,7 +80,7 @@ export default function ChatArea({
   };
 
   return (
-    <section className="w-2/3 flex flex-col h-full bg-neutral-950">
+    <section className="custom-scrollbar w-2/3 flex flex-col h-full bg-neutral-950">
       {/* Top Bar: Retrieval Scope */}
       <div className="px-6 py-3 border-b border-neutral-800/80 bg-neutral-900/30 flex justify-between items-center">
         <div className="flex items-center gap-2">

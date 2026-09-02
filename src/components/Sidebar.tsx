@@ -125,7 +125,7 @@ export default function Sidebar({
 
   return (
     <section className="w-1/3 border-r border-neutral-800 p-6 flex flex-col justify-between bg-neutral-900/50 h-full overflow-hidden">
-      <div className="space-y-5 overflow-y-auto pr-1">
+      <div className="space-y-5 overflow-y-auto pr-1 custom-scrollbar">
         <div>
           <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2.5 py-1 rounded-full">
             Full-Stack RAG Engine
@@ -170,7 +170,7 @@ export default function Sidebar({
             </span>
           </div>
 
-          <div className="space-y-1.5 max-h-40 overflow-y-auto">
+          <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
             {/* Global Search Option */}
             <button
               type="button"
